@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ dish.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-check-circle-fill text-success fs-1 me-3"></i>
+        <div>
+            <h2 class="fw-bold text-primary mb-1">{{ dish.name }}</h2>
+            <p class="text-muted mb-0">
+                <i class="bi bi-calendar me-1"></i>{{ dish.created_date.strftime('%d.%m.%Y %H:%M') }}
+            </p>
+        </div>
+    </div>
+    <button class="btn btn-outline-warning btn-lg favorite-btn" id="favoriteBtn" onclick="toggleFavorite()">
+        <i class="bi bi-star"></i> В избранное
+    </button>
+</div>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">КБЖУ блюда</h5>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="bg-light rounded-4 p-3 text-center">
+                                <div class="small text-muted">Калории</div>
+                                <div class="h3 mb-0 text-success">{{ "%.1f"|format(dish.total_calories) }}</div>
+                                <small>ккал</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light rounded-4 p-3 text-center">
+                                <div class="small text-muted">Белки</div>
+                                <div class="h3 mb-0">{{ "%.1f"|format(dish.total_proteins) }}</div>
+                                <small>г</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light rounded-4 p-3 text-center">
+                                <div class="small text-muted">Жиры</div>
+                                <div class="h3 mb-0">{{ "%.1f"|format(dish.total_fats) }}</div>
+                                <small>г</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light rounded-4 p-3 text-center">
+                                <div class="small text-muted">Углеводы</div>
+                                <div class="h3 mb-0">{{ "%.1f"|format(dish.total_carbs) }}</div>
+                                <small>г</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success bg-soft-green border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="bi bi-info-circle me-2"></i>
+                                Вес блюда: <strong>{{ dish.total_weight or dish.ingredients|sum(attribute='weight') }} г</strong>
+                            </span>
+                            <span class="fw-bold">
+                                На 100г: {{ "%.1f"|format(dish.calories_per_100g) }} ккал
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-3 mt-4">Состав</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ингредиент</th>
+                                    <th>Вес (г)</th>
+                                    <th>Ккал</th>
+                                    <th>Белки</th>
+                                    <th>Жиры</th>
+                                    <th>Углеводы</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ingredient in dish.ingredients %}
+                                <tr>
+                                    <td>{{ ingredient.product.name }}</td>
+                                    <td>{{ ingredient.weight }}</td>
+                                    <td>{{ "%.1f"|format(ingredient.calories) }}</td>
+                                    <td>{{ "%.1f"|format(ingredient.proteins) }}</td>
+                                    <td>{{ "%.1f"|format(ingredient.fats) }}</td>
+                                    <td>{{ "%.1f"|format(ingredient.carbs) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Действия</h5>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('new_dish') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Новое блюдо
+                        </a>
+                        <a href="{{ url_for('my_dishes') }}" class="btn btn-outline-success">
+                            <i class="bi bi-collection me-2"></i>Мои блюда
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>Распечатать
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <i class="bi bi-share me-1"></i> Поделиться результатом
+                    </div>
+                    <div class="mt-2">
+                        <a href="#" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-telegram"></i>
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-green {
+        background-color: #E8F5E9;
+    }
+</style>
+<script>
+function toggleFavorite() {
+    const btn = document.getElementById('favoriteBtn');
+    const icon = btn.querySelector('i');
+    const isFavorite = icon.classList.contains('bi-star-fill');
+
+    const url = isFavorite ? `/api/favorite/remove/{{ dish.id }}` : `/api/favorite/add/{{ dish.id }}`;
+
+    fetch(url, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (isFavorite) {
+                    icon.classList.remove('bi-star-fill');
+                    icon.classList.add('bi-star');
+                    btn.innerHTML = '<i class="bi bi-star"></i> В избранное';
+                } else {
+                    icon.classList.remove('bi-star');
+                    icon.classList.add('bi-star-fill');
+                    btn.innerHTML = '<i class="bi bi-star-fill"></i> В избранном';
+                }
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Ошибка при добавлении в избранное');
+        });
+}
+
+// Проверка состояния избранного при загрузке
+fetch('/api/favorite/check/{{ dish.id }}')
+    .then(response => response.json())
+    .then(data => {
+        const btn = document.getElementById('favoriteBtn');
+        if (data.is_favorite) {
+            btn.innerHTML = '<i class="bi bi-star-fill"></i> В избранном';
+        }
+    });
+</script>
+{% endblock %}

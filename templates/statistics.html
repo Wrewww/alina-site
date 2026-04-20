@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-graph-up text-success fs-1 me-3"></i>
+            <div>
+                <h2 class="fw-bold text-primary mb-1">Статистика питания</h2>
+                <p class="text-muted mb-0">Анализ вашего рациона за последние дни</p>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div id="loading" class="htmx-indicator">
+        <div class="text-center py-5">
+            <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Обновление графиков...</p>
+        </div>
+    </div>
+
+    <div id="charts-container">
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">Динамика калорий за неделю</h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        {% if weekly_chart %}
+                            <img src="data:image/png;base64,{{ weekly_chart }}" class="img-fluid" alt="Недельная динамика">
+                        {% else %}
+                            <div class="py-5">
+                                <i class="bi bi-calendar-week display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Недостаточно данных для отображения</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">Распределение БЖУ</h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        {% if nutrients_chart %}
+                            <img src="data:image/png;base64,{{ nutrients_chart }}" class="img-fluid" alt="Распределение БЖУ">
+                        {% else %}
+                            <div class="py-5">
+                                <i class="bi bi-pie-chart display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Нет данных для отображения</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">Калории по приемам пищи</h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        {% if meals_chart %}
+                            <img src="data:image/png;base64,{{ meals_chart }}" class="img-fluid" alt="Калории по приемам пищи">
+                        {% else %}
+                            <div class="py-5">
+                                <i class="bi bi-bar-chart display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Нет данных для отображения</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+}
+.htmx-indicator {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.htmx-request .htmx-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#charts-container > div {
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endblock %}

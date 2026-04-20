@@ -1,0 +1,727 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-0">Добрый день, {{ current_user.username }}! </h2>
+            <p class="text-muted mt-2">Что бы вы хотели сегодня съесть?</p>
+        </div>
+        <div>
+            <a href="{{ url_for('new_dish') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Новое блюдо
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4" id="totals-container">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm rounded-4 text-center">
+                <div class="card-body">
+                    <i class="bi bi-fire text-success fs-2"></i>
+                    <h3 class="fw-bold mt-2 mb-0" id="total-calories">{{ (meal_data.breakfast.total_calories + meal_data.lunch.total_calories + meal_data.dinner.total_calories)|round|int }}</h3>
+                    <small class="text-muted">ккал всего</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm rounded-4 text-center">
+                <div class="card-body">
+                    <i class="bi bi-egg-fried text-success fs-2"></i>
+                    <h3 class="fw-bold mt-2 mb-0" id="total-proteins">{{ (meal_data.breakfast.total_proteins + meal_data.lunch.total_proteins + meal_data.dinner.total_proteins)|round(1) }}</h3>
+                    <small class="text-muted">белки (г)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm rounded-4 text-center">
+                <div class="card-body">
+                    <i class="bi bi-droplet text-success fs-2"></i>
+                    <h3 class="fw-bold mt-2 mb-0" id="total-fats">{{ (meal_data.breakfast.total_fats + meal_data.lunch.total_fats + meal_data.dinner.total_fats)|round(1) }}</h3>
+                    <small class="text-muted">жиры (г)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm rounded-4 text-center">
+                <div class="card-body">
+                    <i class="bi bi-basket text-success fs-2"></i>
+                    <h3 class="fw-bold mt-2 mb-0" id="total-carbs">{{ (meal_data.breakfast.total_carbs + meal_data.lunch.total_carbs + meal_data.dinner.total_carbs)|round(1) }}</h3>
+                    <small class="text-muted">углеводы (г)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-droplet-half text-primary me-2"></i>Трекер воды
+                </h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="addWater(250)">
+                        <i class="bi bi-cup"></i> 250 мл
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addWater(500)">
+                        <i class="bi bi-cup-straw"></i> 500 мл
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="customWater()">
+                        <i class="bi bi-plus-lg"></i> Своё
+                    </button>
+                </div>
+            </div>
+            <div class="progress mb-2" style="height: 30px;">
+                <div id="waterProgress" class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+                     role="progressbar" style="width: 0%;">
+                    <span id="waterText" class="fw-bold">0 / 2000 мл</span>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <button class="btn btn-sm btn-outline-danger" onclick="resetWater()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Приемы пищи</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <button class="btn btn-outline-success w-100 text-start p-3 rounded-3" type="button" data-bs-toggle="modal" data-bs-target="#mealModal" data-meal-type="breakfast">
+                            <i class="bi bi-sunrise fs-5 me-2"></i>
+                            Завтрак
+                            <span class="badge bg-success float-end" id="breakfast-calories">{{ meal_data.breakfast.total_calories|round|int }} ккал</span>
+                        </button>
+                        <div id="breakfast-dishes" class="mt-2 p-3 bg-light rounded-3">
+                            {% for dish in meal_data.breakfast.dishes %}
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom dish-item" data-dish-id="{{ dish.id }}">
+                                    <div>
+                                        <strong>{{ dish.name }}</strong>
+                                        <small class="text-muted d-block">{{ dish.grams }} г</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">{{ dish.calories|round|int }} ккал</span>
+                                        <button type="button" onclick="removeFromMeal({{ dish.id }}, 'breakfast')" class="btn btn-sm btn-link text-danger p-0 ms-2">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0 text-center">Нет блюд</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <button class="btn btn-outline-success w-100 text-start p-3 rounded-3" type="button" data-bs-toggle="modal" data-bs-target="#mealModal" data-meal-type="lunch">
+                            <i class="bi bi-sun fs-5 me-2"></i>
+                            Обед
+                            <span class="badge bg-success float-end" id="lunch-calories">{{ meal_data.lunch.total_calories|round|int }} ккал</span>
+                        </button>
+                        <div id="lunch-dishes" class="mt-2 p-3 bg-light rounded-3">
+                            {% for dish in meal_data.lunch.dishes %}
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom dish-item" data-dish-id="{{ dish.id }}">
+                                    <div>
+                                        <strong>{{ dish.name }}</strong>
+                                        <small class="text-muted d-block">{{ dish.grams }} г</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">{{ dish.calories|round|int }} ккал</span>
+                                        <button type="button" onclick="removeFromMeal({{ dish.id }}, 'lunch')" class="btn btn-sm btn-link text-danger p-0 ms-2">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0 text-center">Нет блюд</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <button class="btn btn-outline-success w-100 text-start p-3 rounded-3" type="button" data-bs-toggle="modal" data-bs-target="#mealModal" data-meal-type="dinner">
+                            <i class="bi bi-moon-stars fs-5 me-2"></i>
+                            Ужин
+                            <span class="badge bg-success float-end" id="dinner-calories">{{ meal_data.dinner.total_calories|round|int }} ккал</span>
+                        </button>
+                        <div id="dinner-dishes" class="mt-2 p-3 bg-light rounded-3">
+                            {% for dish in meal_data.dinner.dishes %}
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom dish-item" data-dish-id="{{ dish.id }}">
+                                    <div>
+                                        <strong>{{ dish.name }}</strong>
+                                        <small class="text-muted d-block">{{ dish.grams }} г</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">{{ dish.calories|round|int }} ккал</span>
+                                        <button type="button" onclick="removeFromMeal({{ dish.id }}, 'dinner')" class="btn btn-sm btn-link text-danger p-0 ms-2">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0 text-center">Нет блюд</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Сравнение калорий с нормой</h5>
+                        <small class="text-muted" id="lastUpdateTime"></small>
+                    </div>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div id="calories-chart-container">
+                        {% if calories_chart %}
+                            <img src="data:image/png;base64,{{ calories_chart }}" class="img-fluid" alt="График калорий">
+                        {% else %}
+                            <div class="py-5">
+                                <i class="bi bi-bar-chart display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Нет данных для отображения</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-info-circle"></i> Норма: {{ calorie_norm }} ккал в день
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="mealModal" tabindex="-1" aria-labelledby="mealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="mealModalLabel">
+                    <i class="bi bi-egg-fried me-2"></i>Добавить блюдо к <span id="mealTypeName"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="dishTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button" role="tab">
+                            <i class="bi bi-star-fill text-warning me-1"></i>Любимые
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent" type="button" role="tab">
+                            <i class="bi bi-clock-history me-1"></i>Недавние
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                            <i class="bi bi-list-ul me-1"></i>Все блюда
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="dishTabsContent">
+                    <div class="tab-pane fade show active" id="favorites" role="tabpanel">
+                        <div class="list-group" id="favorites-list">
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-star display-6"></i>
+                                <p class="mt-2">Загрузка...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="recent" role="tabpanel">
+                        <div class="list-group" id="recent-list">
+                            {% if recent_dishes %}
+                                {% for dish in recent_dishes %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ dish.name }}</h6>
+                                        <small class="text-muted">{{ dish.total_calories|round|int }} ккал / {{ dish.total_weight or 100 }}г</small>
+                                    </div>
+                                    <div>
+                                        <div class="input-group input-group-sm" style="width: 150px;">
+                                            <input type="number" id="grams-{{ dish.id }}" value="100" min="10" step="10" class="form-control form-control-sm">
+                                            <span class="input-group-text">г</span>
+                                        </div>
+                                        <button class="btn btn-success btn-sm add-to-meal mt-1" data-dish-id="{{ dish.id }}" data-dish-name="{{ dish.name }}">
+                                            <i class="bi bi-plus"></i> Добавить
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-calendar-day display-6"></i>
+                                    <p class="mt-2">Нет блюд за сегодня</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="all" role="tabpanel">
+                        <div class="list-group" id="all-dishes-list" style="max-height: 400px; overflow-y: auto;">
+                            {% for dish in all_dishes %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ dish.name }}</h6>
+                                    <small class="text-muted">{{ dish.total_calories|round|int }} ккал / {{ dish.total_weight or 100 }}г</small>
+                                </div>
+                                <div>
+                                    <div class="input-group input-group-sm" style="width: 150px;">
+                                        <input type="number" id="grams-all-{{ dish.id }}" value="100" min="10" step="10" class="form-control form-control-sm">
+                                        <span class="input-group-text">г</span>
+                                    </div>
+                                    <button class="btn btn-success btn-sm add-to-meal mt-1" data-dish-id="{{ dish.id }}" data-dish-name="{{ dish.name }}">
+                                        <i class="bi bi-plus"></i> Добавить
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="createDishLink" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Создать новое блюдо
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-outline-success {
+    border-color: #2E7D32;
+    color: #2E7D32;
+}
+.btn-outline-success:hover {
+    background-color: #2E7D32;
+    color: white;
+}
+.badge.bg-success {
+    background-color: #2E7D32 !important;
+}
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+}
+.list-group-item {
+    transition: background-color 0.2s;
+}
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+.nav-tabs .nav-link {
+    color: #2E7D32;
+}
+.nav-tabs .nav-link.active {
+    color: #2E7D32;
+    font-weight: bold;
+    border-bottom: 2px solid #2E7D32;
+}
+.progress-bar {
+    line-height: 30px;
+    font-weight: bold;
+}
+#calories-chart-container {
+    transition: opacity 0.3s ease;
+}
+#calories-chart-container.updating {
+    opacity: 0.5;
+}
+</style>
+
+<script>
+let currentMealType = '';
+
+function updateCaloriesChart() {
+    const container = document.getElementById('calories-chart-container');
+    if (!container) return;
+
+    container.classList.add('updating');
+
+    fetch('/update_calories_chart')
+        .then(response => response.text())
+        .then(html => {
+            container.innerHTML = html;
+            container.classList.remove('updating');
+            const updateTimeElem = document.getElementById('lastUpdateTime');
+            if (updateTimeElem) {
+                updateTimeElem.innerHTML = 'Обновлено: ' + new Date().toLocaleTimeString();
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления графика:', error);
+            container.classList.remove('updating');
+        });
+}
+
+function refreshAllData() {
+    updateCaloriesChart();
+    loadWaterData();
+    showNotification('Данные обновлены', 'success');
+}
+
+function removeFromMeal(mealDishId, mealType) {
+    if (!confirm('Удалить это блюдо?')) return;
+
+    fetch('/remove-from-meal', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ meal_dish_id: mealDishId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const dishElement = document.querySelector(`#${mealType}-dishes .dish-item[data-dish-id="${mealDishId}"]`);
+            if (dishElement) {
+                dishElement.remove();
+            }
+
+            const caloriesBadge = document.getElementById(`${mealType}-calories`);
+            if (caloriesBadge && data.meal_calories !== undefined) {
+                caloriesBadge.textContent = Math.round(data.meal_calories) + ' ккал';
+            }
+
+            if (data.totals) {
+                const totalCaloriesElem = document.getElementById('total-calories');
+                const totalProteinsElem = document.getElementById('total-proteins');
+                const totalFatsElem = document.getElementById('total-fats');
+                const totalCarbsElem = document.getElementById('total-carbs');
+
+                if (totalCaloriesElem) totalCaloriesElem.textContent = Math.round(data.totals.calories);
+                if (totalProteinsElem) totalProteinsElem.textContent = data.totals.proteins.toFixed(1);
+                if (totalFatsElem) totalFatsElem.textContent = data.totals.fats.toFixed(1);
+                if (totalCarbsElem) totalCarbsElem.textContent = data.totals.carbs.toFixed(1);
+            }
+
+            updateCaloriesChart();
+
+            const container = document.getElementById(`${mealType}-dishes`);
+            if (container && container.children.length === 0) {
+                container.innerHTML = '<p class="text-muted small mb-0 text-center">Нет блюд</p>';
+            }
+
+            showNotification('Блюдо удалено', 'info');
+            notifyStatisticsUpdate();
+        } else {
+            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении блюда', 'danger');
+    });
+}
+
+function loadWaterData() {
+    fetch('/api/water/today')
+        .then(response => response.json())
+        .then(data => {
+            const total = data.total || 0;
+            const goal = data.goal || 2000;
+            const percent = Math.min((total / goal) * 100, 100);
+            const waterProgress = document.getElementById('waterProgress');
+            const waterText = document.getElementById('waterText');
+
+            if (waterProgress) waterProgress.style.width = percent + '%';
+            if (waterText) waterText.innerHTML = `${Math.round(total)} / ${goal} мл`;
+
+            if (waterProgress) {
+                if (percent >= 100) {
+                    waterProgress.classList.add('bg-success');
+                    waterProgress.classList.remove('bg-primary');
+                } else {
+                    waterProgress.classList.add('bg-primary');
+                    waterProgress.classList.remove('bg-success');
+                }
+            }
+        })
+        .catch(error => console.error('Ошибка загрузки воды:', error));
+}
+
+function addWater(amount) {
+    fetch('/api/water/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: amount })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadWaterData();
+            showNotification(`Добавлено ${amount} мл воды`, 'success');
+        }
+    })
+    .catch(error => console.error('Ошибка:', error));
+}
+
+function customWater() {
+    let amount = prompt('Введите количество воды в мл:', '250');
+    if (amount && !isNaN(amount) && amount > 0) {
+        addWater(parseInt(amount));
+    }
+}
+
+function resetWater() {
+    if (confirm('Сбросить все записи о воде за сегодня?')) {
+        fetch('/api/water/reset', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadWaterData();
+                    showNotification('Вода сброшена', 'info');
+                }
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '250px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 3000);
+}
+
+function updateCreateDishLink() {
+    const createDishLink = document.getElementById('createDishLink');
+    if (createDishLink && currentMealType) {
+        createDishLink.href = `/new-dish?return_to=add_to_meal&meal_type=${currentMealType}`;
+    } else if (createDishLink) {
+        createDishLink.href = '/new-dish';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadWaterData();
+    const lastUpdateElem = document.getElementById('lastUpdateTime');
+    if (lastUpdateElem) {
+        lastUpdateElem.innerHTML = 'Обновлено: ' + new Date().toLocaleTimeString();
+    }
+
+    const mealModal = document.getElementById('mealModal');
+    if (mealModal) {
+        mealModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            currentMealType = button.getAttribute('data-meal-type');
+            const mealTypeName = {
+                'breakfast': 'завтраку',
+                'lunch': 'обеду',
+                'dinner': 'ужину'
+            }[currentMealType];
+            const mealTypeNameSpan = document.getElementById('mealTypeName');
+            if (mealTypeNameSpan) mealTypeNameSpan.textContent = mealTypeName;
+
+            updateCreateDishLink();
+            loadFavoriteDishes();
+        });
+    }
+
+    document.querySelectorAll('.add-to-meal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const dishId = this.getAttribute('data-dish-id');
+            const dishName = this.getAttribute('data-dish-name');
+            let grams = 100;
+
+            if (this.closest('#recent')) {
+                const gramsInput = document.getElementById(`grams-${dishId}`);
+                if (gramsInput) grams = gramsInput.value;
+            } else if (this.closest('#all')) {
+                const gramsInput = document.getElementById(`grams-all-${dishId}`);
+                if (gramsInput) grams = gramsInput.value;
+            } else if (this.closest('#favorites')) {
+                const gramsInput = document.getElementById(`grams-fav-${dishId}`);
+                if (gramsInput) grams = gramsInput.value;
+            }
+
+            addToMeal(dishId, dishName, grams);
+        });
+    });
+});
+
+function loadFavoriteDishes() {
+    fetch('/api/favorite/list')
+        .then(response => response.json())
+        .then(data => {
+            const favoritesList = document.getElementById('favorites-list');
+            if (!favoritesList) return;
+
+            if (data.length === 0) {
+                favoritesList.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-star display-6"></i>
+                        <p class="mt-2">Нет любимых блюд</p>
+                        <p class="small">Нажмите на звездочку в списке блюд, чтобы добавить в избранное</p>
+                    </div>
+                `;
+            } else {
+                favoritesList.innerHTML = data.map(dish => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">${escapeHtml(dish.name)}</h6>
+                            <small class="text-muted">${Math.round(dish.total_calories)} ккал / 100г</small>
+                        </div>
+                        <div>
+                            <div class="input-group input-group-sm" style="width: 150px;">
+                                <input type="number" id="grams-fav-${dish.id}" value="100" min="10" step="10" class="form-control form-control-sm">
+                                <span class="input-group-text">г</span>
+                            </div>
+                            <button class="btn btn-success btn-sm add-to-meal-fav mt-1" data-dish-id="${dish.id}" data-dish-name="${escapeHtml(dish.name)}">
+                                <i class="bi bi-plus"></i> Добавить
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('#favorites-list .add-to-meal-fav').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const dishId = this.getAttribute('data-dish-id');
+                        const dishName = this.getAttribute('data-dish-name');
+                        const gramsInput = document.getElementById(`grams-fav-${dishId}`);
+                        const grams = gramsInput ? gramsInput.value : 100;
+                        addToMeal(dishId, dishName, grams);
+                    });
+                });
+            }
+        })
+        .catch(error => console.error('Ошибка загрузки любимых блюд:', error));
+}
+
+function addToMeal(dishId, dishName, grams) {
+    fetch('/add-to-meal', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            dish_id: dishId,
+            meal_type: currentMealType,
+            grams: parseFloat(grams)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateMealDisplay(currentMealType, data.dish);
+
+            if (data.totals) {
+                const totalCaloriesElem = document.getElementById('total-calories');
+                const totalProteinsElem = document.getElementById('total-proteins');
+                const totalFatsElem = document.getElementById('total-fats');
+                const totalCarbsElem = document.getElementById('total-carbs');
+
+                if (totalCaloriesElem) totalCaloriesElem.textContent = Math.round(data.totals.calories);
+                if (totalProteinsElem) totalProteinsElem.textContent = data.totals.proteins.toFixed(1);
+                if (totalFatsElem) totalFatsElem.textContent = data.totals.fats.toFixed(1);
+                if (totalCarbsElem) totalCarbsElem.textContent = data.totals.carbs.toFixed(1);
+            }
+
+            updateCaloriesChart();
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('mealModal'));
+            if (modal) modal.hide();
+
+            showNotification(`Блюдо "${dishName}" добавлено к ${getMealTypeName(currentMealType)}`, 'success');
+            notifyStatisticsUpdate();
+        } else {
+            showNotification('Ошибка: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при добавлении блюда', 'danger');
+    });
+}
+
+function updateMealDisplay(mealType, dishData) {
+    const container = document.getElementById(`${mealType}-dishes`);
+    if (!container) return;
+
+    const newDishHtml = `
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom dish-item" data-dish-id="${dishData.id}">
+            <div>
+                <strong>${escapeHtml(dishData.name)}</strong>
+                <small class="text-muted d-block">${dishData.grams} г</small>
+            </div>
+            <div>
+                <span class="badge bg-success">${Math.round(dishData.calories)} ккал</span>
+                <button type="button" onclick="removeFromMeal(${dishData.id}, '${mealType}')" class="btn btn-sm btn-link text-danger p-0 ms-2">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    if (container.innerHTML.includes('Нет блюд')) {
+        container.innerHTML = newDishHtml;
+    } else {
+        container.insertAdjacentHTML('afterbegin', newDishHtml);
+    }
+
+    const caloriesBadge = document.getElementById(`${mealType}-calories`);
+    if (caloriesBadge) {
+        const currentCalories = parseInt(caloriesBadge.textContent) || 0;
+        caloriesBadge.textContent = Math.round(currentCalories + dishData.calories) + ' ккал';
+    }
+}
+
+function getMealTypeName(mealType) {
+    const names = {
+        'breakfast': 'завтраку',
+        'lunch': 'обеду',
+        'dinner': 'ужину'
+    };
+    return names[mealType];
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function notifyStatisticsUpdate() {
+    if (window.location.pathname === '/statistics') {
+        const refreshBtn = document.getElementById('refreshStatsBtn');
+        if (refreshBtn) refreshBtn.click();
+    }
+    localStorage.setItem('updateStatistics', Date.now());
+}
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'updateStatistics') {
+        const refreshBtn = document.getElementById('refreshStatsBtn');
+        if (refreshBtn) refreshBtn.click();
+    }
+});
+</script>
+{% endblock %}

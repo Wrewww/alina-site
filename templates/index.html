@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <h1 class="display-4 fw-bold mb-4">
+                    Рассчитайте КБЖУ <span class="text-success">любого блюда</span> за минуту
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Просто введите название блюда, добавьте ингредиенты из нашей базы
+                    и получите точный расчет калорий, белков, жиров и углеводов.
+                </p>
+                <div class="d-flex gap-3">
+                    {% if current_user %}
+                        <a href="/new_dish" class="btn btn-primary btn-lg px-4">Начать расчет</a>
+                        <a href="/new_dish" class="btn btn-outline-primary btn-lg px-4">Мои блюда</a>
+                    {% else %}
+                        <a href="/register" class="btn btn-primary btn-lg px-4">Начать</a>
+                        <a href="#how-it-works" class="btn btn-outline-primary btn-lg px-4">Как это работает</a>
+                    {% endif %}
+                </div>
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i> более 200 продуктов в базе
+                    </small>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-lg rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="mb-0">Новый расчет</h5>
+                </div>
+                <div class="card-body p-4">
+                <form id="dishForm" action="{{ url_for('new_dish') }}" method="GET">
+                <div class="mb-4">
+                    <label class="form-label text-muted mb-2">Название блюда</label>
+                    <input type="text" class="form-control form-control-lg"
+                           name="name" id="dish_name"
+                           placeholder="Например: Овсяная каша с бананом" required>
+                </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3">
+                    Продолжить <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">Как это работает</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="feature-card card h-100 p-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-1-circle-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Введите название</h5>
+                        <p class="text-muted mb-0">Начните с названия блюда - это поможет сохранить результат</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card card h-100 p-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-2-circle-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Добавьте ингредиенты</h5>
+                        <p class="text-muted mb-0">Находите продукты в базе</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card card h-100 p-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-3-circle-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Получите расчет</h5>
+                        <p class="text-muted mb-0">Мгновенный подсчет КБЖУ для всего блюда</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card card h-100 p-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-4-circle-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Сохраняйте</h5>
+                        <p class="text-muted mb-0">Все рассчитанные блюда доступны в личном кабинете</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="py-5 bg-white">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">Возможности AN Calories</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-database"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Большая база продуктов</h5>
+                    <p class="text-muted">Более 200 продуктов с точными данными КБЖУ на 100 грамм</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Точный расчет КБЖУ</h5>
+                    <p class="text-muted">Мгновенный подсчет калорий, белков, жиров и углеводов для любого блюда</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Личный кабинет</h5>
+                    <p class="text-muted">Сохраняйте любимые блюда и возвращайтесь к ним в любое время</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}

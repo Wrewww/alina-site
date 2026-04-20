@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Мои блюда{% endblock %}
+{% block content %}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Мои блюда</h2>
+            <p class="text-muted mb-0">Все сохраненные рецепты и расчеты</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary me-2" id="showAllBtn" onclick="showAllDishes()">
+                <i class="bi bi-grid"></i> Все
+            </button>
+            <button class="btn btn-outline-warning" id="showFavoritesBtn" onclick="showFavorites()">
+                <i class="bi bi-star"></i> Избранное
+            </button>
+        </div>
+    </div>
+
+    <div id="dishesContainer" class="row g-4">
+        {% for dish in dishes %}
+        <div class="col-md-6 col-lg-4 dish-card" data-dish-id="{{ dish.id }}">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="fw-bold mb-0">{{ dish.name }}</h5>
+                        <div>
+                            <button class="btn btn-sm btn-link favorite-btn p-0 me-2"
+                                    data-dish-id="{{ dish.id }}"
+                                    onclick="toggleFavorite(this, {{ dish.id }})">
+                                <i class="bi bi-star"></i>
+                            </button>
+                            <span class="badge bg-success">{{ "%.0f"|format(dish.total_calories) }} ккал</span>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-calendar me-1"></i>{{ dish.created_date.strftime('%d.%m.%Y') }}
+                    </p>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Белки:</span>
+                            <span class="fw-bold">{{ "%.1f"|format(dish.total_proteins) }} г</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Жиры:</span>
+                            <span class="fw-bold">{{ "%.1f"|format(dish.total_fats) }} г</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Углеводы:</span>
+                            <span class="fw-bold">{{ "%.1f"|format(dish.total_carbs) }} г</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-egg me-1"></i>{{ dish.ingredients|length }} ингр.
+                        </small>
+                        <div>
+                            <a href="{{ url_for('view_dish', dish_id=dish.id) }}" class="btn btn-sm btn-outline-success me-2">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="confirmDelete({{ dish.id }}, '{{ dish.name }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not dishes %}
+    <div class="text-center py-5">
+        <i class="bi bi-emoji-frown display-1 text-muted"></i>
+        <h4 class="fw-bold mt-3">У вас пока нет сохраненных блюд</h4>
+        <p class="text-muted mb-4">Создайте свое первое блюдо и рассчитайте его КБЖУ</p>
+        <a href="{{ url_for('new_dish') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle me-2"></i>Создать блюдо
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Подтверждение удаления
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить блюдо <strong id="deleteDishName"></strong>?</p>
+                <p class="text-muted small">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Удалить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allDishes = [];
+
+// Загрузка состояния избранного для всех блюд
+function loadFavoritesStatus() {
+    const dishCards = document.querySelectorAll('.dish-card');
+    dishCards.forEach(card => {
+        const dishId = card.dataset.dishId;
+        fetch(`/api/favorite/check/${dishId}`)
+            .then(response => response.json())
+            .then(data => {
+                const btn = card.querySelector('.favorite-btn i');
+                if (data.is_favorite) {
+                    btn.classList.remove('bi-star');
+                    btn.classList.add('bi-star-fill');
+                    btn.style.color = '#ffc107';
+                } else {
+                    btn.classList.remove('bi-star-fill');
+                    btn.classList.add('bi-star');
+                    btn.style.color = '';
+                }
+            });
+    });
+}
+
+// Переключение избранного
+function toggleFavorite(btn, dishId) {
+    const icon = btn.querySelector('i');
+    const isFavorite = icon.classList.contains('bi-star-fill');
+
+    const url = isFavorite ? `/api/favorite/remove/${dishId}` : `/api/favorite/add/${dishId}`;
+
+    fetch(url, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (isFavorite) {
+                    icon.classList.remove('bi-star-fill');
+                    icon.classList.add('bi-star');
+                    icon.style.color = '';
+                    // Если мы на вкладке избранного, удаляем карточку
+                    if (document.getElementById('showFavoritesBtn').classList.contains('active')) {
+                        btn.closest('.dish-card').remove();
+                    }
+                } else {
+                    icon.classList.remove('bi-star');
+                    icon.classList.add('bi-star-fill');
+                    icon.style.color = '#ffc107';
+                }
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Ошибка при изменении избранного');
+        });
+}
+
+// Показать все блюда
+function showAllDishes() {
+    document.querySelectorAll('.dish-card').forEach(card => {
+        card.style.display = '';
+    });
+    document.getElementById('showAllBtn').classList.add('active');
+    document.getElementById('showFavoritesBtn').classList.remove('active');
+}
+
+// Показать только избранные
+function showFavorites() {
+    document.querySelectorAll('.dish-card').forEach(card => {
+        const icon = card.querySelector('.favorite-btn i');
+        if (icon.classList.contains('bi-star-fill')) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    document.getElementById('showFavoritesBtn').classList.add('active');
+    document.getElementById('showAllBtn').classList.remove('active');
+}
+
+// Удаление блюда
+function confirmDelete(dishId, dishName) {
+    document.getElementById('deleteDishName').textContent = dishName;
+    document.getElementById('deleteForm').action = `/delete-dish/${dishId}`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Загрузка состояния избранного при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadFavoritesStatus();
+});
+</script>
+
+<style>
+.btn-outline-warning.active {
+    background-color: #ffc107;
+    color: white;
+}
+.btn-outline-primary.active {
+    background-color: #2E7D32;
+    color: white;
+}
+.favorite-btn i {
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+.favorite-btn:hover i {
+    transform: scale(1.1);
+}
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(46, 125, 50, 0.1) !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Требуется авторизация{% endblock %}
+{% block content %}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4 text-center">
+                <div class="card-body p-5">
+                    <i class="bi bi-lock-fill text-warning display-1"></i>
+                    <h3 class="fw-bold mt-3">Требуется авторизация</h3>
+                    <p class="text-muted mt-3 mb-4">
+                        Чтобы создавать и сохранять блюда, необходимо войти в аккаунт.
+                    </p>
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.btn-primary {
+    background-color: #2E7D32;
+    border-color: #2E7D32;
+}
+.btn-primary:hover {
+    background-color: #1B5E20;
+    border-color: #1B5E20;
+}
+.btn-outline-primary {
+    color: #2E7D32;
+    border-color: #2E7D32;
+}
+.btn-outline-primary:hover {
+    background-color: #2E7D32;
+    color: white;
+}
+</style>
+{% endblock %}

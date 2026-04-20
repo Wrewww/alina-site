@@ -1,0 +1,915 @@
+{% extends "base.html" %}
+{% block title %}Новое блюдо{% endblock %}
+{% block content %}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="bi bi-calculator text-success fs-1 me-3"></i>
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Создание нового блюда</h2>
+            <p class="text-muted mb-0">Добавьте ингредиенты и рассчитайте КБЖУ</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <form id="dishForm">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.name.label }}</label>
+                            {{ form.name(class="form-control form-control-lg", placeholder="Например: Овсяная каша с фруктами", id="dishName") }}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label fw-bold mb-0">Ингредиенты</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addIngredientBtn">
+                                    <i class="bi bi-plus-lg"></i> Добавить ингредиент
+                                </button>
+                            </div>
+
+                            <div id="ingredientsContainer">
+                                <div class="ingredient-row bg-light rounded-3 p-3 mb-3" data-id="0">
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label small text-muted">Продукт</label>
+                                            <div style="position: relative;">
+                                                <input type="text" class="form-control product-search"
+                                                       placeholder="Начните вводить название..."
+                                                       autocomplete="off"
+                                                       style="width: 100%;">
+                                                <input type="hidden" class="product-id" value="">
+                                                <div class="search-results" style="display: none;"></div>
+                                            </div>
+                                            <div class="mt-1">
+                                                <button type="button" class="btn btn-link btn-sm text-success p-0 mt-1 add-personal-product-btn" style="font-size: 0.85rem;">
+                                                    <i class="bi bi-plus-circle me-1"></i>Нет подходящего продукта? Добавьте свой
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted">Вес (г)</label>
+                                            <input type="number" class="form-control product-weight"
+                                                   placeholder="100" min="1" step="1" value="100">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                                <div>
+                                                    <small class="text-muted">Калорийность:</small>
+                                                    <span class="ingredient-calories fw-bold text-success">0</span>
+                                                    <small class="text-muted"> ккал</small>
+                                                </div>
+                                                <button type="button" class="btn btn-link text-danger remove-ingredient p-0" title="Удалить">
+                                                    <i class="bi bi-trash fs-5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info bg-soft-green border-0 mt-3" id="noIngredientsMessage" style="display: none;">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Добавьте хотя бы один ингредиент
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.total_weight.label }}</label>
+                            {{ form.total_weight(class="form-control", placeholder="Вес готового блюда (необязательно)", id="totalWeight", step="1") }}
+                            <div class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Если не указан, будет использован суммарный вес ингредиентов
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100 py-3" id="calculateBtn" disabled>
+                            <i class="bi bi-calculator me-2"></i>Рассчитать КБЖУ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 90px;">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Предварительный итог</h5>
+                </div>
+                <div class="card-body p-4" id="previewContent">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-calculator fs-1"></i>
+                        <p class="mt-2">Добавьте ингредиенты для расчета</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle me-2"></i>Результаты расчета
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultContent">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-success" id="saveDishBtn">
+                    <i class="bi bi-bookmark me-2"></i>Сохранить блюдо
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPersonalProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Добавить свой продукт
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="personalProductForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Название продукта</label>
+                        <input type="text" class="form-control" id="personalProductName" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Калории (ккал на 100г)</label>
+                            <input type="number" class="form-control" id="personalProductCalories" step="0.1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Белки (г на 100г)</label>
+                            <input type="number" class="form-control" id="personalProductProteins" step="0.1" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Жиры (г на 100г)</label>
+                            <input type="number" class="form-control" id="personalProductFats" step="0.1" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Углеводы (г на 100г)</label>
+                            <input type="number" class="form-control" id="personalProductCarbs" step="0.1" value="0">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" id="savePersonalProductBtn">
+                    <i class="bi bi-save me-2"></i>Сохранить продукт
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let ingredientCounter = 1;
+let searchTimeout;
+let currentSearchTerm = '';
+let currentDishData = null;
+let currentSearchInput = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateIngredientsCount();
+    setupProductSearch();
+
+    document.getElementById('addIngredientBtn').addEventListener('click', addIngredientRow);
+    document.getElementById('calculateBtn').addEventListener('click', calculateDish);
+    document.getElementById('saveDishBtn').addEventListener('click', saveDish);
+    document.getElementById('totalWeight').addEventListener('input', updatePreview);
+
+    document.getElementById('savePersonalProductBtn').addEventListener('click', savePersonalProduct);
+});
+
+function setupProductSearch() {
+    document.querySelectorAll('.product-search').forEach(input => {
+        // Убедимся, что родительский элемент имеет position: relative
+        const parent = input.parentElement;
+        if (parent && getComputedStyle(parent).position !== 'relative') {
+            parent.style.position = 'relative';
+        }
+
+        // Создаем контейнер для результатов, если его нет
+        let resultsDiv = input.parentElement.querySelector('.search-results');
+        if (!resultsDiv) {
+            resultsDiv = document.createElement('div');
+            resultsDiv.className = 'search-results';
+            resultsDiv.style.display = 'none';
+            input.parentElement.appendChild(resultsDiv);
+        }
+
+        input.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const value = this.value.trim();
+            const row = this.closest('.ingredient-row');
+            const resultsDiv = this.parentElement.querySelector('.search-results');
+
+            if (value.length >= 1) {
+                currentSearchTerm = value;
+                searchTimeout = setTimeout(() => {
+                    if (currentSearchTerm === value) {
+                        searchProducts(value, row);
+                    }
+                }, 300);
+            } else {
+                if (resultsDiv) {
+                    resultsDiv.style.display = 'none';
+                    resultsDiv.innerHTML = '';
+                }
+            }
+        });
+
+        input.addEventListener('focus', function() {
+            const value = this.value.trim();
+            if (value.length >= 1) {
+                const row = this.closest('.ingredient-row');
+                searchProducts(value, row);
+            }
+        });
+
+        input.addEventListener('blur', function() {
+            setTimeout(() => {
+                const resultsDiv = this.parentElement.querySelector('.search-results');
+                if (resultsDiv) resultsDiv.style.display = 'none';
+            }, 200);
+        });
+    });
+
+    document.querySelectorAll('.add-personal-product-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const row = this.closest('.ingredient-row');
+            const searchInput = row.querySelector('.product-search');
+            const productName = searchInput.value.trim();
+            showAddProductModal(searchInput, productName || '');
+        });
+    });
+}
+
+function searchProducts(query, row) {
+    console.log('Поиск:', query);
+
+    const searchInput = row.querySelector('.product-search');
+    const resultsDiv = searchInput.parentElement.querySelector('.search-results');
+
+    if (!resultsDiv) {
+        console.error('resultsDiv не найден');
+        return;
+    }
+
+    // Показываем индикатор загрузки
+    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Поиск...</div>';
+    resultsDiv.style.display = 'block';
+
+    fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка сервера');
+            }
+            return response.json();
+        })
+        .then(products => {
+            console.log('Найдено продуктов:', products.length);
+
+            resultsDiv.innerHTML = '';
+            resultsDiv.style.display = 'block';
+
+            if (products.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="list-group-item text-muted">Ничего не найдено</div>
+                    <div class="list-group-item" style="cursor: pointer; background-color: #E8F5E9;"
+                         onclick="this.closest('.ingredient-row').querySelector('.add-personal-product-btn').click()">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-plus-circle text-success me-2"></i>
+                            <span>Добавить свой продукт "${escapeHtml(query)}"</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            products.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item';
+                item.style.cursor = 'pointer';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span>${escapeHtml(p.name)}</span>
+                            ${p.type === 'personal' ? '<span class="badge bg-info ms-2">Личное</span>' : ''}
+                        </div>
+                        <small class="text-muted">${p.calories} ккал/100г</small>
+                    </div>
+                `;
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectProduct(row, p);
+                    resultsDiv.style.display = 'none';
+                });
+                resultsDiv.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error('Ошибка поиска:', error);
+            resultsDiv.innerHTML = '<div class="list-group-item text-danger">Ошибка поиска</div>';
+            resultsDiv.style.display = 'block';
+        });
+}
+
+function selectProduct(row, product) {
+    const searchInput = row.querySelector('.product-search');
+    const productIdInput = row.querySelector('.product-id');
+
+    searchInput.value = product.name;
+    productIdInput.value = product.id;
+    searchInput.dataset.calories = product.calories;
+    searchInput.dataset.proteins = product.proteins;
+    searchInput.dataset.fats = product.fats;
+    searchInput.dataset.carbs = product.carbs;
+    searchInput.dataset.type = product.type || 'common';
+
+    hideSearchResults(row);
+    updateIngredientCalories(row);
+    updatePreview();
+}
+
+function hideSearchResults(row) {
+    const searchInput = row.querySelector('.product-search');
+    const resultsDiv = searchInput.parentElement.querySelector('.search-results');
+    if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+    }
+}
+
+function updateIngredientCalories(row) {
+    const weight = parseFloat(row.querySelector('.product-weight').value) || 0;
+    const caloriesPer100g = parseFloat(row.querySelector('.product-search').dataset.calories) || 0;
+    const calories = (caloriesPer100g * weight / 100).toFixed(1);
+    row.querySelector('.ingredient-calories').textContent = calories;
+}
+
+function showAddProductModal(searchInput, defaultName = '') {
+    currentSearchInput = searchInput;
+
+    document.getElementById('personalProductName').value = defaultName;
+    document.getElementById('personalProductCalories').value = '';
+    document.getElementById('personalProductProteins').value = '0';
+    document.getElementById('personalProductFats').value = '0';
+    document.getElementById('personalProductCarbs').value = '0';
+
+    const modal = new bootstrap.Modal(document.getElementById('addPersonalProductModal'));
+    modal.show();
+}
+
+function savePersonalProduct() {
+    const name = document.getElementById('personalProductName').value.trim();
+    const calories = parseFloat(document.getElementById('personalProductCalories').value);
+    const proteins = parseFloat(document.getElementById('personalProductProteins').value) || 0;
+    const fats = parseFloat(document.getElementById('personalProductFats').value) || 0;
+    const carbs = parseFloat(document.getElementById('personalProductCarbs').value) || 0;
+
+    if (!name) {
+        alert('Введите название продукта');
+        return;
+    }
+
+    if (!calories || calories <= 0) {
+        alert('Введите корректное количество калорий');
+        return;
+    }
+
+    const saveBtn = document.getElementById('savePersonalProductBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Сохранение...';
+    saveBtn.disabled = true;
+
+    fetch('/api/personal-product/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: name,
+            calories: calories,
+            proteins: proteins,
+            fats: fats,
+            carbs: carbs
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addPersonalProductModal'));
+            modal.hide();
+
+            if (currentSearchInput) {
+                const row = currentSearchInput.closest('.ingredient-row');
+                selectProduct(row, data.product);
+            }
+
+            alert(`Продукт "${name}" успешно добавлен!`);
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка при сохранении продукта');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+function addIngredientRow() {
+    const container = document.getElementById('ingredientsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'ingredient-row bg-light rounded-3 p-3 mb-3';
+    newRow.dataset.id = ingredientCounter;
+    newRow.style.position = 'relative';
+    newRow.innerHTML = `
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Продукт</label>
+                <div style="position: relative;">
+                    <input type="text" class="form-control product-search"
+                           placeholder="Начните вводить название..."
+                           autocomplete="off"
+                           style="width: 100%;">
+                    <input type="hidden" class="product-id" value="">
+                    <div class="search-results" style="display: none;"></div>
+                </div>
+                <div class="mt-1">
+                    <button type="button" class="btn btn-link btn-sm text-success p-0 mt-1 add-personal-product-btn" style="font-size: 0.85rem;">
+                        <i class="bi bi-plus-circle me-1"></i>Нет подходящего продукта? Добавьте свой
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Вес (г)</label>
+                <input type="number" class="form-control product-weight"
+                       placeholder="100" min="1" step="1" value="100">
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div>
+                        <small class="text-muted">Калорийность:</small>
+                        <span class="ingredient-calories fw-bold text-success">0</span>
+                        <small class="text-muted"> ккал</small>
+                    </div>
+                    <button type="button" class="btn btn-link text-danger remove-ingredient p-0" title="Удалить">
+                        <i class="bi bi-trash fs-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(newRow);
+    ingredientCounter++;
+
+    const searchInput = newRow.querySelector('.product-search');
+    const parent = searchInput.parentElement;
+    if (parent) parent.style.position = 'relative';
+
+    let resultsDiv = searchInput.parentElement.querySelector('.search-results');
+    if (!resultsDiv) {
+        resultsDiv = document.createElement('div');
+        resultsDiv.className = 'search-results';
+        resultsDiv.style.display = 'none';
+        searchInput.parentElement.appendChild(resultsDiv);
+    }
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const value = this.value.trim();
+        const row = this.closest('.ingredient-row');
+        const resultsDiv = this.parentElement.querySelector('.search-results');
+
+        if (value.length >= 1) {
+            currentSearchTerm = value;
+            searchTimeout = setTimeout(() => {
+                if (currentSearchTerm === value) {
+                    searchProducts(value, row);
+                }
+            }, 300);
+        } else {
+            if (resultsDiv) {
+                resultsDiv.style.display = 'none';
+                resultsDiv.innerHTML = '';
+            }
+        }
+    });
+
+    searchInput.addEventListener('focus', function() {
+        const value = this.value.trim();
+        if (value.length >= 1) {
+            const row = this.closest('.ingredient-row');
+            searchProducts(value, row);
+        }
+    });
+
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            const resultsDiv = this.parentElement.querySelector('.search-results');
+            if (resultsDiv) resultsDiv.style.display = 'none';
+        }, 200);
+    });
+
+    newRow.querySelector('.add-personal-product-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        const row = this.closest('.ingredient-row');
+        const searchInput = row.querySelector('.product-search');
+        const productName = searchInput.value.trim();
+        showAddProductModal(searchInput, productName || '');
+    });
+
+    newRow.querySelector('.product-weight').addEventListener('input', function() {
+        updateIngredientCalories(newRow);
+        updatePreview();
+    });
+
+    newRow.querySelector('.remove-ingredient').addEventListener('click', function() {
+        newRow.remove();
+        updateIngredientsCount();
+        updatePreview();
+    });
+
+    updateIngredientsCount();
+}
+
+function updateIngredientsCount() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const noIngredientsMessage = document.getElementById('noIngredientsMessage');
+
+    if (rows.length === 0) {
+        calculateBtn.disabled = true;
+        noIngredientsMessage.style.display = 'block';
+    } else {
+        calculateBtn.disabled = false;
+        noIngredientsMessage.style.display = 'none';
+    }
+}
+
+function updatePreview() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    let totalCalories = 0;
+    let totalProteins = 0;
+    let totalFats = 0;
+    let totalCarbs = 0;
+    let totalWeight = 0;
+    let ingredients = [];
+
+    rows.forEach(row => {
+        const weight = parseFloat(row.querySelector('.product-weight').value) || 0;
+        const caloriesPer100g = parseFloat(row.querySelector('.product-search').dataset.calories) || 0;
+        const proteinsPer100g = parseFloat(row.querySelector('.product-search').dataset.proteins) || 0;
+        const fatsPer100g = parseFloat(row.querySelector('.product-search').dataset.fats) || 0;
+        const carbsPer100g = parseFloat(row.querySelector('.product-search').dataset.carbs) || 0;
+        const name = row.querySelector('.product-search').value || 'Не выбрано';
+        const productId = row.querySelector('.product-id').value;
+
+        if (weight > 0 && caloriesPer100g > 0 && productId) {
+            totalWeight += weight;
+            totalCalories += (caloriesPer100g * weight / 100);
+            totalProteins += (proteinsPer100g * weight / 100);
+            totalFats += (fatsPer100g * weight / 100);
+            totalCarbs += (carbsPer100g * weight / 100);
+
+            ingredients.push({
+                name: name,
+                weight: weight,
+                calories: (caloriesPer100g * weight / 100).toFixed(1)
+            });
+        }
+    });
+
+    const previewContent = document.getElementById('previewContent');
+
+    if (ingredients.length === 0) {
+        previewContent.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-calculator fs-1"></i>
+                <p class="mt-2">Добавьте ингредиенты для расчета</p>
+            </div>
+        `;
+        return;
+    }
+
+    previewContent.innerHTML = `
+        <div class="mb-4">
+            <h6 class="fw-bold mb-3">Общая информация</h6>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Калории:</span>
+                <span class="fw-bold">${totalCalories.toFixed(1)} ккал</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Белки:</span>
+                <span class="fw-bold">${totalProteins.toFixed(1)} г</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Жиры:</span>
+                <span class="fw-bold">${totalFats.toFixed(1)} г</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Углеводы:</span>
+                <span class="fw-bold">${totalCarbs.toFixed(1)} г</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Общий вес:</span>
+                <span class="fw-bold">${totalWeight} г</span>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Ингредиенты</h6>
+        ${ingredients.map(i => `
+            <div class="d-flex justify-content-between small mb-2">
+                <span class="text-muted">${escapeHtml(i.name)} (${i.weight} г)</span>
+                <span>${i.calories} ккал</span>
+            </div>
+        `).join('')}
+    `;
+}
+
+function calculateDish() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    const dishName = document.getElementById('dishName').value.trim();
+
+    if (!dishName) {
+        alert('Введите название блюда');
+        return;
+    }
+
+    let ingredients = [];
+    let valid = true;
+
+    rows.forEach(row => {
+        const productId = row.querySelector('.product-id').value;
+        const productName = row.querySelector('.product-search').value;
+        const weight = parseFloat(row.querySelector('.product-weight').value);
+        const caloriesPer100g = parseFloat(row.querySelector('.product-search').dataset.calories) || 0;
+
+        if (!productId || !productName || !weight || weight <= 0 || !caloriesPer100g) {
+            valid = false;
+            row.classList.add('border', 'border-danger');
+        } else {
+            row.classList.remove('border', 'border-danger');
+            ingredients.push({
+                product_id: parseInt(productId),
+                name: productName,
+                weight: weight
+            });
+        }
+    });
+
+    if (!valid) {
+        alert('Заполните все поля ингредиентов корректно');
+        return;
+    }
+
+    const totalWeight = ingredients.reduce((sum, i) => sum + i.weight, 0);
+    const finalWeight = parseFloat(document.getElementById('totalWeight').value) || totalWeight;
+
+    let totalCalories = 0, totalProteins = 0, totalFats = 0, totalCarbs = 0;
+    let ingredientsList = [];
+
+    rows.forEach(row => {
+        const name = row.querySelector('.product-search').value;
+        const weight = parseFloat(row.querySelector('.product-weight').value);
+        const caloriesPer100g = parseFloat(row.querySelector('.product-search').dataset.calories) || 0;
+        const proteinsPer100g = parseFloat(row.querySelector('.product-search').dataset.proteins) || 0;
+        const fatsPer100g = parseFloat(row.querySelector('.product-search').dataset.fats) || 0;
+        const carbsPer100g = parseFloat(row.querySelector('.product-search').dataset.carbs) || 0;
+
+        const cal = (caloriesPer100g * weight / 100);
+        const prot = (proteinsPer100g * weight / 100);
+        const fat = (fatsPer100g * weight / 100);
+        const carb = (carbsPer100g * weight / 100);
+
+        totalCalories += cal;
+        totalProteins += prot;
+        totalFats += fat;
+        totalCarbs += carb;
+
+        ingredientsList.push({
+            name: name,
+            weight: weight,
+            calories: cal.toFixed(1),
+            proteins: prot.toFixed(1),
+            fats: fat.toFixed(1),
+            carbs: carb.toFixed(1)
+        });
+    });
+
+    const caloriesPer100g = (totalCalories / finalWeight * 100).toFixed(1);
+
+    currentDishData = {
+        name: dishName,
+        total_weight: finalWeight,
+        ingredients: ingredients
+    };
+
+    const resultContent = document.getElementById('resultContent');
+    resultContent.innerHTML = `
+        <div class="text-center mb-4">
+            <h4 class="fw-bold text-success">${escapeHtml(dishName)}</h4>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="bg-light rounded-3 p-3 text-center">
+                    <div class="small text-muted">Калории</div>
+                    <div class="h4 mb-0 text-success">${totalCalories.toFixed(1)}</div>
+                    <small>ккал</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-light rounded-3 p-3 text-center">
+                    <div class="small text-muted">Белки</div>
+                    <div class="h4 mb-0">${totalProteins.toFixed(1)}</div>
+                    <small>г</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-light rounded-3 p-3 text-center">
+                    <div class="small text-muted">Жиры</div>
+                    <div class="h4 mb-0">${totalFats.toFixed(1)}</div>
+                    <small>г</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-light rounded-3 p-3 text-center">
+                    <div class="small text-muted">Углеводы</div>
+                    <div class="h4 mb-0">${totalCarbs.toFixed(1)}</div>
+                    <small>г</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success bg-soft-green border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-info-circle me-2"></i>На 100 грамм готового блюда:</span>
+                <span class="fw-bold">${caloriesPer100g} ккал</span>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Состав блюда:</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ингредиент</th>
+                        <th>Вес (г)</th>
+                        <th>Ккал</th>
+                        <th>Б/Ж/У</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${ingredientsList.map(i => `
+                        <tr>
+                            <td>${escapeHtml(i.name)}</td>
+                            <td>${i.weight}</td>
+                            <td>${i.calories}</td>
+                            <td>${i.proteins}/${i.fats}/${i.carbs}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    new bootstrap.Modal(document.getElementById('resultModal')).show();
+}
+
+function saveDish() {
+    if (!currentDishData) {
+        alert('Нет данных для сохранения');
+        return;
+    }
+
+    const saveBtn = document.getElementById('saveDishBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Сохранение...';
+    saveBtn.disabled = true;
+
+    fetch('/save-dish', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentDishData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('resultModal'));
+            if (modal) modal.hide();
+
+            alert('Блюдо успешно сохранено!');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnTo = urlParams.get('return_to');
+            const mealType = urlParams.get('meal_type');
+
+            if (returnTo === 'add_to_meal' && mealType) {
+                window.location.href = `/dashboard?open_meal=${mealType}`;
+            } else {
+                window.location.href = '/dashboard';
+            }
+        } else {
+            alert('Ошибка при сохранении: ' + data.error);
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка при сохранении: ' + (error.error || 'Неизвестная ошибка'));
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+
+<style>
+    .search-results {
+        position: absolute;
+        z-index: 10000;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 4px;
+    }
+
+    .list-group-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .list-group-item:hover {
+        background-color: #E8F5E9;
+    }
+
+    .bg-soft-green {
+        background-color: #E8F5E9;
+    }
+
+    .sticky-top {
+        z-index: 99;
+    }
+
+    .border-danger {
+        border: 2px solid #dc3545 !important;
+    }
+
+    .ingredient-row {
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .ingredient-row:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .product-search:focus {
+        box-shadow: none;
+        border-color: #86b7fe;
+    }
+</style>
+{% endblock %}
